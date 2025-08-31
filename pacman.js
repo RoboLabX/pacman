@@ -139,35 +139,83 @@ function loadMap() {
 }
 
 function update() {
+    if (gameOver) {
+        return;
+    }
     move();
     draw();
     setTimeout(update, 50); //1000/50 = 20 FPS
 }
 
+function resetPositions() {
+    pacman.reset();
+    pacman.velocityX = 0;
+    pacman.velocityY = 0;
+    for (let ghost of ghosts.values()) {
+        ghost.reset();
+        const newDirection = directions[Math.floor(Math.random()*4)];
+        ghost.updateDirection(newDirection);
+    }
+}
+
+
  function move() {
-        pacman.x += pacman.velocityX;
-        pacman.y += pacman.velocityY;
-        for (let wall of walls.values()) {
-            if (collision(pacman, wall)) {
-                pacman.x -= pacman.velocityX;
-                pacman.y -= pacman.velocityY;
-                break;
-            }
+    pacman.x += pacman.velocityX;
+    pacman.y += pacman.velocityY;
+
+    //check wall collisions
+    for (let wall of walls.values()) {
+        if (collision(pacman, wall)) {
+            pacman.x -= pacman.velocityX;
+            pacman.y -= pacman.velocityY;
+            break;
         }
-        for (let ghost of ghosts.values()) {
+    }
+
+    //check ghosts collision
+    for (let ghost of ghosts.values()) {
+        if (collision(ghost, pacman)) {
+            lives -= 1;
+            if (lives == 0) {
+                gameOver = true;
+                return;
+            }
+            resetPositions();
+        }
+
+        if (ghost.y == tileSize*17 && ghost.direction != 'U' && ghost.direction != 'D') {
+            ghost.updateDirection('U');
+        }
+
         ghost.x += ghost.velocityX;
         ghost.y += ghost.velocityY;
         for (let wall of walls.values()) {
-             if (collision(ghost, wall) || ghost.x <= 0 || ghost.x + ghost.width >= boardWidth) {
+            if (collision(ghost, wall) || ghost.x <= 0 || ghost.x + ghost.width >= boardWidth) {
                 ghost.x -= ghost.velocityX;
                 ghost.y -= ghost.velocityY;
                 const newDirection = directions[Math.floor(Math.random()*4)];
                 ghost.updateDirection(newDirection);
             }
         }
-        }
- }
+    }
 
+    //check food collision
+    let foodEaten = null;
+    for (let food of foods.values()) {
+        if (collision(pacman, food)) {
+            foodEaten = food;
+            score += 10;
+            break;
+        }
+    }
+    foods.delete(foodEaten);
+
+    //next level
+    if (foods.size == 0) {
+        loadMap();
+        resetPositions();
+    }
+}
 function draw() {
     context.clearRect(0, 0, board.width, board.height);// haiiiiiiiii
     context.drawImage(pacman.image, pacman.x, pacman.y, pacman.width, pacman.height);// halloooooooooo
@@ -294,8 +342,9 @@ class Block {
         }
     }
 
-    //reset() {
-    //    this.x = this.startX;
-    //    this.y = this.startY;
-    //}
-} //44:36
+    reset() {
+        this.x = this.startX;
+        this.y = this.startY;
+    }
+} ///////// hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii :
+//:))))))))))
